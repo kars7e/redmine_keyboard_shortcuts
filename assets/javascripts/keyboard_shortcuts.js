@@ -207,7 +207,7 @@ var KsGlobalManager = Class.extend({
   },
 
   viewHelp: function() {
-    if (ks_dispatcher.dialog && $$('.ks-help').length > 0) {
+    if (ks_dispatcher.dialog && $('.ks-help').length > 0) {
       ks_dispatcher.closeDialog();
       return;
     }
@@ -396,7 +396,7 @@ var KsListManager = Class.extend({
   open: function() {
     var cur_id = this.issues[this.current_selected].id.replace('issue-', '');
     ks_dispatcher.go('issues/' + cur_id);
-  },
+  }
 
 });
 
@@ -405,6 +405,12 @@ var KsIssueManager = Class.extend({
   init: function() {
     this.description = "Keyboard Shortcuts for Issue View";
     this.keys = {
+      m: {
+        press: this.addSubIssue.bind(this),
+        description: "Add sub issue to the current issue",
+        allowInDialog: true
+
+      },
       j: {
         press: this.nextIssue.bind(this),
         description: "Navigate to next issue",
@@ -476,7 +482,9 @@ var KsIssueManager = Class.extend({
       ks_dispatcher.go('/issues/' + this.next.id);
     }
   },
-
+  addSubIssue: function() {
+    ks_dispatcher.go($('#issue_tree').find('a').attr('href'));
+  },
   previousIssue: function() {
     if (this.inQueue() && this.current_selected > 0) {
       this.selectIssue(this.current_selected - 1);
@@ -570,7 +578,7 @@ var KsEditManager = Class.extend({
     this.keys = {
       m: {
         press: this.changeProject.bind(this),
-        description: "Change project",
+        description: "Change project"
       },
       a: {
         press: this.assignIssues.bind(this),
@@ -622,7 +630,7 @@ var KsDialog = Class.extend({
     var window_height = $(window).height();
     var margin = $(window).scrollTop() + (window_height - this.dialog.height()) / 2;
     this.dialog.css({
-      'margin-top': margin + 'px',
+      'margin-top': margin + 'px'
     });
   },
 
