@@ -48,7 +48,7 @@ var KsDispatcher = Class.extend({
   init: function() {
     this.ks_managers = []
     this.dialog = null;
-    if ($('table.list').length == 1) {
+    if ($('table.list').length == 1 && $('body.controller-issues.action-show').length < 1) {
       this.ks_managers.push(new KsListManager());
     }
     else if ($('body.controller-issues.action-show').length == 1) {
@@ -238,11 +238,15 @@ var KsListManager = Class.extend({
     this.description = "Keyboard Shortcuts for List View";
 
     this.keys = {
-      j: {
+      a: {
+        press: this.selectChildren.bind(this),
+        description: "Select all subissues of currently selected issue"
+      },
+      k: {
         press: this.nextIssue.bind(this),
         description: "Move cursor to next issue"
       },
-      k: {
+      j: {
         press: this.previousIssue.bind(this),
         description: "Move cursor to previous issue"
       },
@@ -272,6 +276,28 @@ var KsListManager = Class.extend({
 
   },
 
+  selectChildren: function() {
+    var issue_id = this.issues[this.current_selected].id.replace('issue-', '');
+    if (issue_id) {
+      this.issues.each(function (el) {
+        if ($(this).find('.parent').find('a').attr('href') == '/issues/' + issue_id) {
+          var checkbox = $(this).find('.checkbox input');
+          var td = $(this).find('td')[0];
+          if ($(checkbox).is(':checked') == false) {
+              checkbox.click();
+              $(this).addClass('context-menu-selection');
+          }
+        } else {
+            var checkbox = $(this).find('.checkbox input');
+            if ($(checkbox).is(':checked') == true) {
+                checkbox.click();
+                $(this).removeClass('context-menu-selection');
+            }
+        }
+
+      });
+    }
+  },
   selectIssue: function(idx) {
     if (this.current_selected != idx) {
       $(this.issues[this.current_selected]).removeClass('ks-selected');
@@ -411,12 +437,30 @@ var KsIssueManager = Class.extend({
         allowInDialog: true
 
       },
-      j: {
+      "1": {
+        press: this.addSubIssue.bind(this),
+        description: "ctrl + 1 - Add sub issue to the current issue With type id 1 ",
+        allowInDialog: true
+
+      },
+      "2": {
+        press: this.addSubIssue.bind(this),
+        description: "ctrl + 2 - Add sub issue to the current issue With type id 2 ",
+        allowInDialog: true
+
+      },
+      "3": {
+        press: this.addSubIssue.bind(this),
+        description: "ctrl + 3 - Add sub issue to the current issue With type id 3 ",
+        allowInDialog: true
+
+      },
+      k: {
         press: this.nextIssue.bind(this),
         description: "Navigate to next issue",
         allowInDialog: true
       },
-      k: {
+      j: {
         press: this.previousIssue.bind(this),
         description: "Navigate to previous issues",
         allowInDialog: true
@@ -475,23 +519,42 @@ var KsIssueManager = Class.extend({
   },
 
   nextIssue: function() {
-    if (this.inQueue() && this.current_selected != this.issue_list.length -1) {
-      this.selectIssue(this.current_selected + 1);
-    }
-    else if(this.next) {
-      ks_dispatcher.go('/issues/' + this.next.id);
-    }
+    $.get('/issues/next_subissue/' + ks_issue_id, function(data){
+        if (!isNaN(parseInt(data))) {
+            ks_dispatcher.go('/issues/' + parseInt(data));
+        } /*else {
+            if (this.inQueue() && this.current_selected != this.issue_list.length -1) {
+                this.selectIssue(this.current_selected + 1);
+            }
+            else if(this.next) {
+                ks_dispatcher.go('/issues/' + this.next.id);
+            }
+        } */
+
+    });
+
   },
-  addSubIssue: function() {
-    ks_dispatcher.go($('#issue_tree').find('a').attr('href'));
+  addSubIssue: function(event) {
+    key = getDisplayKey(event);
+    if ((key == "1" || key == "2" || key == "3") && event.ctrlKey) {
+      ks_dispatcher.go($('#issue_tree').find('a').attr('href')+"&issue[tracker_id]="+key);
+    } else {
+      ks_dispatcher.go($('#issue_tree').find('a').attr('href'));
+    }
   },
   previousIssue: function() {
-    if (this.inQueue() && this.current_selected > 0) {
-      this.selectIssue(this.current_selected - 1);
-    }
-    else if(this.previous) {
-      ks_dispatcher.go('/issues/' + this.previous.id);
-    }
+    $.get('/issues/prev_subissue/' + ks_issue_id, function(data){
+      if (!isNaN(parseInt(data))) {
+          ks_dispatcher.go('/issues/' + parseInt(data));
+      } /*else {
+        if (this.inQueue() && this.current_selected > 0) {
+          this.selectIssue(this.current_selected - 1);
+        }
+        else if(this.previous) {
+          ks_dispatcher.go('/issues/' + this.previous.id);
+        }
+      } */
+    });
   },
 
   selectIssue: function(idx) {
@@ -527,6 +590,12 @@ var KsIssueManager = Class.extend({
     if (!this.has_edited) {
       this.editIssue(event);
     }
+    $('<input>').attr({
+      type: 'hidden',
+      id: '',
+      name: 'redirect_to_parent',
+      value: '1'
+    }).appendTo('#issue-form');
     $('#issue-form').submit();
   },
 

@@ -1,3 +1,5 @@
+require_dependency 'issues_controller_patch'
+
 Redmine::Plugin.register :redmine_keyboard_shortcuts do
   name 'Redmine Keyboard Shortcuts'
   author 'Austin Smith (modified by Karol Stepniewski)'
