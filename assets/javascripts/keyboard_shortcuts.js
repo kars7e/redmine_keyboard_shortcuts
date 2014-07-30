@@ -462,21 +462,39 @@ var KsIssueManager = Class.extend({
         allowInDialog: true
 
       },
-      "1": {
+      "Q": {
         press: this.addSubIssue.bind(this),
-        description: "ctrl + 1 - Add sub issue to the current issue With type id 1 ",
+        description: "Add sub issue to the current issue With type id 1 ",
         allowInDialog: true
 
       },
-      "2": {
+      "W": {
         press: this.addSubIssue.bind(this),
-        description: "ctrl + 2 - Add sub issue to the current issue With type id 2 ",
+        description: "Add sub issue to the current issue With type id 2 ",
         allowInDialog: true
 
       },
-      "3": {
+      "E": {
         press: this.addSubIssue.bind(this),
-        description: "ctrl + 3 - Add sub issue to the current issue With type id 3 ",
+        description: "Add sub issue to the current issue With type id 3 ",
+        allowInDialog: true
+
+      },
+      "R": {
+        press: this.addSubIssue.bind(this),
+        description: "Add sub issue to the current issue With type id 4 ",
+        allowInDialog: true
+
+      },
+      "T": {
+        press: this.addSubIssue.bind(this),
+        description: "Add sub issue to the current issue With type id 5 ",
+        allowInDialog: true
+
+      },
+      "Y": {
+        press: this.addSubIssue.bind(this),
+        description: "Add sub issue to the current issue With type id 6 ",
         allowInDialog: true
 
       },
@@ -550,9 +568,17 @@ var KsIssueManager = Class.extend({
 
   },
   addSubIssue: function(event) {
+    var dictKey = {
+      "Q": '1',
+      "W": '2',
+      "E": '3',
+      "R": '4',
+      "T": '5',
+      "Y": '6'
+    }
     key = getDisplayKey(event);
-    if ((key == "1" || key == "2" || key == "3") && event.ctrlKey) {
-      ks_dispatcher.go($('#issue_tree').find('a').attr('href')+"&issue[tracker_id]="+key);
+    if ((key == "Q" || key == "W" || key == "E" || key == "R" || key == "T" || key == "Y")) {
+      ks_dispatcher.go($('#issue_tree').find('a').attr('href')+"&issue[tracker_id]="+dictKey[key]);
     } else {
       ks_dispatcher.go($('#issue_tree').find('a').attr('href'));
     }
