@@ -54,6 +54,9 @@ var KsDispatcher = Class.extend({
     else if ($('body.controller-issues.action-show').length == 1) {
       this.ks_managers.push(new KsIssueManager());
     }
+    else if ($('body.controller-issues.action-new').length == 1 || $('body.controller-issues.action-update').length == 1 || $('body.controller-issues.action-create').length == 1) {
+      this.ks_managers.push(new KsIssueNewManager());
+    }
     else if ($('body.controller-issues.action-bulk_edit').length == 1) {
       this.ks_managers.push(new KsEditManager());
     }
@@ -426,6 +429,28 @@ var KsListManager = Class.extend({
 
 });
 
+var KsIssueNewManager = Class.extend({
+
+  init: function() {
+    this.description = "Keyboard Shortcuts for Issue View";
+    this.keys = {
+      w: {
+        press: this.saveIssue.bind(this),
+        description: "Save the issue"
+      }
+    };
+  },
+  saveIssue: function(event) {
+    $('<input>').attr({
+      type: 'hidden',
+      id: '',
+      name: 'redirect_to_parent',
+      value: '1'
+    }).appendTo('#issue-form');
+    $('#issue-form').submit();
+  }
+});
+
 var KsIssueManager = Class.extend({
 
   init: function() {
@@ -519,19 +544,9 @@ var KsIssueManager = Class.extend({
   },
 
   nextIssue: function() {
-    $.get('/issues/next_subissue/' + ks_issue_id, function(data){
-        if (!isNaN(parseInt(data))) {
-            ks_dispatcher.go('/issues/' + parseInt(data));
-        } /*else {
-            if (this.inQueue() && this.current_selected != this.issue_list.length -1) {
-                this.selectIssue(this.current_selected + 1);
-            }
-            else if(this.next) {
-                ks_dispatcher.go('/issues/' + this.next.id);
-            }
-        } */
-
-    });
+    if (next_issue_id) {
+      ks_dispatcher.go('/issues/' + next_issue_id);
+    }
 
   },
   addSubIssue: function(event) {
@@ -543,18 +558,9 @@ var KsIssueManager = Class.extend({
     }
   },
   previousIssue: function() {
-    $.get('/issues/prev_subissue/' + ks_issue_id, function(data){
-      if (!isNaN(parseInt(data))) {
-          ks_dispatcher.go('/issues/' + parseInt(data));
-      } /*else {
-        if (this.inQueue() && this.current_selected > 0) {
-          this.selectIssue(this.current_selected - 1);
-        }
-        else if(this.previous) {
-          ks_dispatcher.go('/issues/' + this.previous.id);
-        }
-      } */
-    });
+    if (prev_issue_id) {
+      ks_dispatcher.go('/issues/' + prev_issue_id);
+    }
   },
 
   selectIssue: function(idx) {

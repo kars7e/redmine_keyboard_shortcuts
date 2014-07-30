@@ -5,5 +5,15 @@
   var ks_projects = <%= Project.visible.find(:all, :select => 'name, identifier', :order => 'lft').to_json.html_safe %>;
   <% if (params[:controller] == 'issues' && params[:action] == 'show') then %>
     var ks_issue_id = <%= @issue.id %>;
+      <% if @next_issue_id %>
+        var next_issue_id = <%= @next_issue_id %>;
+      <% else %>
+        var next_issue_id = null;
+      <% end %>
+      <% if @prev_issue_id %>
+        var prev_issue_id = <%= @prev_issue_id %>;
+      <% else %>
+        var prev_issue_id = null;
+      <% end %>
   <% end %>
 </script>

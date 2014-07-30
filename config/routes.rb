@@ -1,2 +1,0 @@
-match 'issues/next_subissue/:id', :controller => 'issues', :action => 'get_next_subissue', :via => :get, :as => 'get_next_subissue'
-match 'issues/prev_subissue/:id', :controller => 'issues', :action => 'get_prev_subissue', :via => :get, :as => 'get_prev_subissue'

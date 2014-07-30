@@ -8,11 +8,53 @@ module IssuesControllerPatch
 
     base.module_eval do
       alias_method_chain :update,:parent
+      alias_method_chain :retrieve_previous_and_next_issue_ids,:parent
       before_filter :authorize, :except => [:index, :get_next_subissue, :get_prev_subissue]
 
     end
   end
   module InstanceMethods
+    def retrieve_previous_and_next_issue_ids_with_parent
+      retrieve_query_from_session
+      if @query
+        query = @query.dup
+        query.add_available_filter 'parent_id', { :type => :integer, :name => 'Zagadnienie nadrzedne' }
+        if @issue.parent
+          query.add_filter('parent_id', '=', [@issue.parent.id.to_s])
+        else
+          query.add_filter('parent_id', '!*')
+        end
+        sort_init(query.sort_criteria.empty? ? [['id', 'desc']] : query.sort_criteria)
+        sort_update(query.sortable_columns, 'issues_index_sort')
+        limit = 500
+        issue_ids = query.issue_ids(:order => sort_clause, :limit => (limit + 1), :include => [:assigned_to, :tracker, :priority, :category, :fixed_version])
+        if (idx = issue_ids.index(@issue.id)) && idx < limit
+          if issue_ids.size < 500
+            @issue_position = idx + 1
+            @issue_count = issue_ids.size
+          end
+          @prev_issue_id = issue_ids[idx - 1] if idx > 0
+          @next_issue_id = issue_ids[idx + 1] if idx < (issue_ids.size - 1)
+        end
+        #@query.delete_available_filter 'parent_id'
+      end
+
+      # if @issue.parent
+      #   issues_higher = Issue.where('parent_id = ? AND id > ?', @issue.parent_id, @issue.id).order('id asc')
+      #   if issues_higher and issues_higher.length > 0
+      #     @next_issue_id = issues_higher[0].id
+      #   end
+      #   issues_lower = Issue.where('parent_id = ? AND id < ?', @issue.parent_id, @issue.id).order('id asc')
+      #   if issues_lower and issues_lower.length > 0
+      #     @prev_issue_id  = issues_lower[0].id
+      #   end
+      #   @issue_position = issues_lower.length + 1
+      #   @issue_count = issues_lower.length + issues_higher.length + 1
+      # else
+      #   retrieve_previous_and_next_issue_ids_without_parent
+      # end
+    end
+
     def update_with_parent
       return unless update_issue_from_params
       @issue.save_attachments(params[:attachments] || (params[:issue] && params[:issue][:uploads]))
@@ -49,29 +91,6 @@ module IssuesControllerPatch
           format.api  { render_validation_errors(@issue) }
         end
       end
-    end
-
-    def get_next_subissue
-      find_issue
-      if (@issue.parent)
-        issues = Issue.where('parent_id = ? AND id > ?', @issue.parent_id, @issue.id).order('id asc')
-        if issues and issues.length > 0
-          render :text => issues[0].id
-          return
-        end
-      end
-      render :text => ''
-    end
-    def get_prev_subissue
-      find_issue
-      if (@issue.parent)
-        issues = Issue.where('parent_id = ? AND id < ?', @issue.parent_id, @issue.id).order('id asc')
-        if issues and issues.length > 0
-          render :text => issues.last.id
-          return
-        end
-      end
-      render :text => ''
     end
   end
 
