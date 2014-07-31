@@ -8,6 +8,7 @@ module IssuesControllerPatch
 
     base.module_eval do
       alias_method_chain :update,:parent
+      alias_method_chain :create,:parent
       alias_method_chain :retrieve_previous_and_next_issue_ids,:parent
       before_filter :authorize, :except => [:index, :get_next_subissue, :get_prev_subissue]
 
@@ -54,7 +55,40 @@ module IssuesControllerPatch
       #   retrieve_previous_and_next_issue_ids_without_parent
       # end
     end
-
+    def create_with_parent
+      call_hook(:controller_issues_new_before_save, { :params => params, :issue => @issue })
+      @issue.save_attachments(params[:attachments] || (params[:issue] && params[:issue][:uploads]))
+      if @issue.save
+        call_hook(:controller_issues_new_after_save, { :params => params, :issue => @issue})
+        if params[:redirect_to_parent]
+          if (@issue.parent_issue_id)
+            redirect_back_or_default issue_path(@issue.parent_issue_id)
+          else
+            redirect_to project_issues_path(@issue.project)
+          end
+        else
+          respond_to do |format|
+            format.html {
+              render_attachment_warning_if_needed(@issue)
+              flash[:notice] = l(:notice_issue_successful_create, :id => view_context.link_to("##{@issue.id}", issue_path(@issue), :title => @issue.subject))
+              if params[:continue]
+                attrs = {:tracker_id => @issue.tracker, :parent_issue_id => @issue.parent_issue_id}.reject {|k,v| v.nil?}
+                redirect_to new_project_issue_path(@issue.project, :issue => attrs)
+              else
+                redirect_to issue_path(@issue)
+              end
+            }
+            format.api  { render :action => 'show', :status => :created, :location => issue_url(@issue) }
+          end
+        end
+        return
+      else
+        respond_to do |format|
+          format.html { render :action => 'new' }
+          format.api  { render_validation_errors(@issue) }
+        end
+      end
+    end
     def update_with_parent
       return unless update_issue_from_params
       @issue.save_attachments(params[:attachments] || (params[:issue] && params[:issue][:uploads]))
