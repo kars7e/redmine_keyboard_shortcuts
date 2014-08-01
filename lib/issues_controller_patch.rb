@@ -7,8 +7,6 @@ module IssuesControllerPatch
     base.send(:include, InstanceMethods)
 
     base.module_eval do
-      alias_method_chain :update,:parent
-      alias_method_chain :create,:parent
       alias_method_chain :retrieve_previous_and_next_issue_ids,:parent
       before_filter :authorize, :except => [:index, :get_next_subissue, :get_prev_subissue]
 
@@ -36,93 +34,6 @@ module IssuesControllerPatch
           end
           @prev_issue_id = issue_ids[idx - 1] if idx > 0
           @next_issue_id = issue_ids[idx + 1] if idx < (issue_ids.size - 1)
-        end
-        #@query.delete_available_filter 'parent_id'
-      end
-
-      # if @issue.parent
-      #   issues_higher = Issue.where('parent_id = ? AND id > ?', @issue.parent_id, @issue.id).order('id asc')
-      #   if issues_higher and issues_higher.length > 0
-      #     @next_issue_id = issues_higher[0].id
-      #   end
-      #   issues_lower = Issue.where('parent_id = ? AND id < ?', @issue.parent_id, @issue.id).order('id asc')
-      #   if issues_lower and issues_lower.length > 0
-      #     @prev_issue_id  = issues_lower[0].id
-      #   end
-      #   @issue_position = issues_lower.length + 1
-      #   @issue_count = issues_lower.length + issues_higher.length + 1
-      # else
-      #   retrieve_previous_and_next_issue_ids_without_parent
-      # end
-    end
-    def create_with_parent
-      call_hook(:controller_issues_new_before_save, { :params => params, :issue => @issue })
-      @issue.save_attachments(params[:attachments] || (params[:issue] && params[:issue][:uploads]))
-      if @issue.save
-        call_hook(:controller_issues_new_after_save, { :params => params, :issue => @issue})
-        if params[:redirect_to_parent]
-          if (@issue.parent_issue_id)
-            redirect_back_or_default issue_path(@issue.parent_issue_id)
-          else
-            redirect_to project_issues_path(@issue.project)
-          end
-        else
-          respond_to do |format|
-            format.html {
-              render_attachment_warning_if_needed(@issue)
-              flash[:notice] = l(:notice_issue_successful_create, :id => view_context.link_to("##{@issue.id}", issue_path(@issue), :title => @issue.subject))
-              if params[:continue]
-                attrs = {:tracker_id => @issue.tracker, :parent_issue_id => @issue.parent_issue_id}.reject {|k,v| v.nil?}
-                redirect_to new_project_issue_path(@issue.project, :issue => attrs)
-              else
-                redirect_to issue_path(@issue)
-              end
-            }
-            format.api  { render :action => 'show', :status => :created, :location => issue_url(@issue) }
-          end
-        end
-        return
-      else
-        respond_to do |format|
-          format.html { render :action => 'new' }
-          format.api  { render_validation_errors(@issue) }
-        end
-      end
-    end
-    def update_with_parent
-      return unless update_issue_from_params
-      @issue.save_attachments(params[:attachments] || (params[:issue] && params[:issue][:uploads]))
-      saved = false
-      begin
-        saved = save_issue_with_child_records
-      rescue ActiveRecord::StaleObjectError
-        @conflict = true
-        if params[:last_journal_id]
-          @conflict_journals = @issue.journals_after(params[:last_journal_id]).all
-          @conflict_journals.reject!(&:private_notes?) unless User.current.allowed_to?(:view_private_notes, @issue.project)
-        end
-      end
-
-      if saved
-        render_attachment_warning_if_needed(@issue)
-        flash[:notice] = l(:notice_successful_update) unless @issue.current_journal.new_record?
-        if params[:redirect_to_parent]
-          if (@issue.parent_issue_id)
-            redirect_back_or_default issue_path(@issue.parent_issue_id)
-          else
-            redirect_to project_issues_path(@issue.project)
-          end
-        else
-          respond_to do |format|
-            format.html { redirect_back_or_default issue_path(@issue) }
-            format.api  { render_api_ok }
-          end
-        end
-
-      else
-        respond_to do |format|
-          format.html { render :action => 'edit' }
-          format.api  { render_validation_errors(@issue) }
         end
       end
     end
